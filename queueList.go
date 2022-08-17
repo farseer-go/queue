@@ -29,3 +29,9 @@ type queueSubscriber struct {
 // key = queueName
 // value = 队列
 var queueConsumer map[string]*queueList
+
+func initConsumer() {
+	queueConsumer = make(map[string]*queueList)
+	// 启动消费
+	go pop()
+}

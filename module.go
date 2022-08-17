@@ -10,6 +10,7 @@ func (module Module) DependsModule() []modules.FarseerModule {
 }
 
 func (module Module) PreInitialize() {
+	initConsumer()
 }
 
 func (module Module) Initialize() {
