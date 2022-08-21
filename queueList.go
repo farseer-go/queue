@@ -1,16 +1,18 @@
 package queue
 
+import "github.com/farseer-go/collections"
+
 // 队列列表
 type queueList struct {
 	// 当前队列名称
 	queueName string
 	// 全局队列
-	queue []any
+	queue collections.ListAny
 	// 当前消费到的索引位置（如果是多个消费者，只记录最早的索引位置）
 	// 用于定时移除queue已被消费的数据，以节省内存空间
 	minOffset int
 	// 订阅者
-	queueSubscribers []*queueSubscriber
+	queueSubscribers collections.List[queueSubscriber]
 }
 
 // 订阅者的队列
@@ -28,10 +30,10 @@ type queueSubscriber struct {
 // 队列
 // key = queueName
 // value = 队列
-var queueConsumer map[string]*queueList
+var queueConsumer collections.Dictionary[string, []queueList]
 
 func initConsumer() {
-	queueConsumer = make(map[string]*queueList)
+	queueConsumer = collections.NewDictionary[string, []queueList]()
 	// 启动消费
 	go pop()
 }

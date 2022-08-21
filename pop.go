@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/farseer-go/linq"
+	"github.com/farseer-go/collections"
 	"sync"
 	"time"
 )
@@ -20,11 +20,11 @@ func pop() {
 // iterationSubscriber 按订阅者遍历
 func (queueList *queueList) iterationSubscriber() {
 	// 队列没数据时，跳过
-	if queueList.queue == nil {
+	if queueList.queue.IsEmpty() {
 		return
 	}
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(len(queueList.queueSubscribers))
+	waitGroup.Add(queueList.queueSubscribers.Count())
 
 	for _, myQueue := range queueList.queueSubscribers {
 		// 得出未消费的长度
@@ -64,7 +64,8 @@ func (queueList *queueList) iterationSubscriber() {
 
 // 得到当前所有订阅者的最后消费的位置的最小值
 func (queueList *queueList) statLastIndex() {
-	queueList.minOffset = linq.From(queueList.queueSubscribers).Min(func(item *queueSubscriber) any {
+	subscribers := *queueList.queueSubscribers
+	queueList.minOffset = collections.NewList((*queueList.queueSubscribers...)).Min(func(item *queueSubscriber) any {
 		return item.offset
 	}).(int)
 }

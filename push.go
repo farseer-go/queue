@@ -1,7 +1,5 @@
 package queue
 
-import "github.com/farseer-go/linq"
-
 // Push 添加数据到队列中
 func Push(queueName string, message any) {
 	// 首先从订阅者中找到是否存在eventName
