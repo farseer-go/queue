@@ -1,23 +1,47 @@
 package queue
 
 import (
-	"log"
+	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/modules"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func init() {
-	Subscribe("test", "A", 2, consumer)
-	Subscribe("test", "B", 4, consumer)
+type testSubscribe struct {
+	lst collections.List[int]
 }
 
 func TestPush(t *testing.T) {
+	modules.StartModules(Module{})
+
+	var aSum int
+	Subscribe("test", "A", 2, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+		assert.Equal(t, "A", subscribeName)
+		var lst collections.List[int]
+		lstMessage.MapToList(&lst)
+		aSum += lst.SumItem()
+	})
+
+	var bSum int
+	Subscribe("test", "B", 4, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+		assert.Equal(t, "B", subscribeName)
+		var lst collections.List[int]
+		lstMessage.MapToList(&lst)
+		bSum += lst.SumItem()
+	})
+
+	queue := dicQueue.GetValue("test")
+	assert.Equal(t, 2, queue.subscribers.Count())
+
 	for i := 0; i < 100; i++ {
 		Push("test", i)
 	}
-	time.Sleep(5 * time.Second)
-}
 
-func consumer(subscribeName string, message []any, remainingCount int) {
-	log.Println("Name=", subscribeName, "，Msg=", message, "RemainingCount=", remainingCount)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 4950, aSum)
+	assert.Equal(t, 4950, bSum)
+	time.Sleep(6 * time.Second)
+	assert.Equal(t, -1, queue.minOffset)
+	assert.True(t, queue.queue.IsEmpty())
 }

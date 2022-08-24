@@ -1,16 +1,46 @@
-### 本地队列使用场景
-我们在生产环境中每秒、每分钟会产生非常多的执行日志。
-如果每产生一条日志就写入一次ES、数据库，则对IO的压力比较大。
-并且这种日志数据是允许一定延迟的。
+### Local Queue Usage Scenarios
+We generate a very large number of execution logs per second, per minute in our production environment.
 
-因此最理想的做法是：积累到一定时间、或数量时，再批量写入。则是最佳的做法。
+If every log generated is written to ES, database once, it will put more pressure on IO.
 
-### 如何使用
+And this log data is allowed to be delayed to some extent.
 
-**导入包：import "fs/mq/queue"**
+The ideal practice is to accumulate to a certain time, or quantity, and then write in bulk.
 
 ## What are the functions?
-* queue（本地队列）
+* queue
     * func
-        * Push （添加数据到队列中）
-        * Subscribe （订阅消息）
+        * Push （product message）
+        * Subscribe （subscribe queue）
+
+
+## Getting Started
+Subscribe Queue
+```go
+// consumerFunc
+// subscribeName = your custom,this is A
+// lstMessage = pull collection list
+// remainingCount = Number of remaining unconsumed in the queue
+func consumer(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+    var lst collections.List[int]
+    lstMessage.MapToList(&lst)
+    
+    lst.Count() // return 2
+}
+
+// Subscribe
+// "test" = QueueName
+// "A" = SubscribeName
+// 2 = Number of pulls
+queue.Subscribe("test", "A", 2, consumer)
+
+
+```
+Product message
+```go
+for i := 0; i < 100; i++ {
+    // "test" = QueueName
+	// i = message
+    queue.Push("test", i)
+}
+```
