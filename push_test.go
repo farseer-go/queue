@@ -2,7 +2,6 @@ package queue
 
 import (
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/modules"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ type testSubscribe struct {
 }
 
 func TestPush(t *testing.T) {
-	modules.StartModules(Module{})
+	fs.Initialize[Module]("unit test")
 
 	var aSum int
 	Subscribe("test", "A", 2, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
