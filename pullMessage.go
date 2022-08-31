@@ -15,7 +15,6 @@ func (curSubscriber *subscriber) pullMessage() {
 				for len(curSubscriber.notify) > 0 {
 					<-curSubscriber.notify
 				}
-				break
 			}
 		}
 
