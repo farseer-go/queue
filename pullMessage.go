@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
 	"time"
 )
 
@@ -53,11 +55,15 @@ func (curSubscriber *subscriber) pullMessage() {
 		curQueue := curSubscriber.queueManager.queue.Range(startIndex, unConsumerLength).ToListAny()
 		remainingCount := curSubscriber.queueManager.queue.Count() - endIndex
 
-		// 保存本次消费的位置
-		curSubscriber.offset = endIndex - 1
-
 		// 执行客户端的消费
-		curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
+		try := exception.Try(func() {
+			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
+			// 保存本次消费的位置
+			curSubscriber.offset = endIndex - 1
+		})
+		try.CatchException(func(exp any) {
+			flog.Error(exp)
+		})
 
 		curSubscriber.isWork = false
 	}
