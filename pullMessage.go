@@ -3,6 +3,7 @@ package queue
 import (
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/stopwatch"
 	"time"
 )
 
@@ -57,7 +58,9 @@ func (curSubscriber *subscriber) pullMessage() {
 
 		// 执行客户端的消费
 		try := exception.Try(func() {
+			sw := stopwatch.StartNew()
 			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
+			flog.AppInfof("queue", "%s，耗时：%s", curSubscriber.subscribeName, sw.GetMillisecondsText())
 			// 保存本次消费的位置
 			curSubscriber.offset = endIndex - 1
 		})
