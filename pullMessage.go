@@ -60,7 +60,7 @@ func (curSubscriber *subscriber) pullMessage() {
 		try := exception.Try(func() {
 			sw := stopwatch.StartNew()
 			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
-			flog.AppInfof("queue", "%s，耗时：%s", curSubscriber.subscribeName, sw.GetMillisecondsText())
+			flog.ComponentInfof("queue", "%s，耗时：%s", curSubscriber.subscribeName, sw.GetMillisecondsText())
 			// 保存本次消费的位置
 			curSubscriber.offset = endIndex - 1
 		})
