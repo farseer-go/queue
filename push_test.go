@@ -2,6 +2,7 @@ package queue
 
 import (
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
