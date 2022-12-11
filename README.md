@@ -1,9 +1,19 @@
 # queue 本地队列
 > 包：`"github.com/farseer-go/queue"`
-
+>
 > 模块：`queue.Module`
 
-> [文档：https://farseer-go.github.io/doc/](https://farseer-go.github.io/doc/)
+- [文档（国内）](https://farseer-go.gitee.io/)
+- [文档（国外）](https://farseer-go.github.io/doc/)
+- [开源（Github）](https://github.com/farseer-go/fs)
+
+![](https://img.shields.io/github/stars/farseer-go?style=social)
+![](https://img.shields.io/github/license/farseer-go/queue)
+![](https://img.shields.io/github/go-mod/go-version/farseer-go/queue)
+![](https://img.shields.io/github/v/release/farseer-go/queue)
+![](https://img.shields.io/github/languages/code-size/farseer-go/queue)
+![](https://img.shields.io/github/directory-file-count/farseer-go/queue)
+![](https://img.shields.io/github/last-commit/farseer-go/queue)
 
 ## 概述
 在我们的生产环境中，我们每秒钟、每分钟都会产生非常多的执行日志。
@@ -28,7 +38,7 @@ _演示：_
 ```go
 func main() {
     fs.Initialize[queue.Module]("queue生产消息演示")
-    
+
     for i := 0; i < 100; i++ {
         queue.Push("test", i)
     }
@@ -48,17 +58,17 @@ func Subscribe(queueName string, subscribeName string, pullCount int, fn queueSu
 - `lstMessage`：本次拉取消息的集合
 - `remainingCount`：队列中剩余的数量
 
-!> 如果有多个不同的`subscribeName`订阅者，`订阅同一个队列`时，则他们的`消费是独立`的，互相不会影响彼此的进度。
+> 如果有多个不同的`subscribeName`订阅者，`订阅同一个队列`时，则他们的`消费是独立`的，互相不会影响彼此的进度。
 
 _演示：_
 ```go
 func main() {
     fs.Initialize[queue.Module]("queue生产消息演示")
 
-	// 消费test队列，每次只拉2条记录
+    // 消费test队列，每次只拉2条记录
     queue.Subscribe("test", "A", 2, consumer)
 
-	// 消费逻辑
+    // 消费逻辑
     func consumer(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
         var lst collections.List[int]
         lstMessage.MapToList(&lst)
