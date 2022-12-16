@@ -13,7 +13,7 @@
 ![](https://img.shields.io/github/v/release/farseer-go/queue)
 ![](https://img.shields.io/github/languages/code-size/farseer-go/queue)
 ![](https://img.shields.io/github/directory-file-count/farseer-go/queue)
-![](https://img.shields.io/github/last-commit/farseer-go/queue)
+![](https://goreportcard.com/badge/github.com/farseer-go/queue)
 
 ## 概述
 在我们的生产环境中，我们每秒钟、每分钟都会产生非常多的执行日志。
