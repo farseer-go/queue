@@ -25,6 +25,15 @@ type queueManager struct {
 	isMoveQueue bool
 }
 
+func newQueueManager(queueName string) *queueManager {
+	return &queueManager{
+		name:        queueName,
+		minOffset:   -1,
+		queue:       collections.NewListAny(),
+		subscribers: collections.NewList[*subscriber](),
+	}
+}
+
 // 得到当前所有订阅者的最后消费的位置的最小值
 func (queueList *queueManager) statLastIndex() {
 	if queueList.subscribers.Count() > 0 {

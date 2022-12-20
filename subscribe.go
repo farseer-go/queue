@@ -20,6 +20,17 @@ type subscriber struct {
 	notify chan bool
 }
 
+func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, queue *queueManager) *subscriber {
+	return &subscriber{
+		subscribeName: subscribeName,
+		offset:        -1,
+		subscribeFunc: fn,
+		pullCount:     pullCount,
+		queueManager:  queue,
+		notify:        make(chan bool, 100000),
+	}
+}
+
 // Consumer 消费
 type queueSubscribeFunc func(subscribeName string, lstMessage collections.ListAny, remainingCount int)
 
@@ -31,12 +42,7 @@ type queueSubscribeFunc func(subscribeName string, lstMessage collections.ListAn
 func Subscribe(queueName string, subscribeName string, pullCount int, fn queueSubscribeFunc) {
 	// 判断队列中是否有queueName这个队列，如果没有，则创建这个队列
 	if !dicQueue.ContainsKey(queueName) {
-		manager := &queueManager{
-			name:        queueName,
-			minOffset:   -1,
-			queue:       collections.NewListAny(),
-			subscribers: collections.NewList[*subscriber](),
-		}
+		manager := newQueueManager(queueName)
 		go manager.stat()
 		dicQueue.Add(queueName, manager)
 	}
@@ -45,14 +51,7 @@ func Subscribe(queueName string, subscribeName string, pullCount int, fn queueSu
 	queue := dicQueue.GetValue(queueName)
 
 	// 添加订阅者
-	subscriber := &subscriber{
-		subscribeName: subscribeName,
-		offset:        -1,
-		subscribeFunc: fn,
-		pullCount:     pullCount,
-		queueManager:  queue,
-		notify:        make(chan bool, 100000),
-	}
+	subscriber := newSubscriber(subscribeName, fn, pullCount, queue)
 	queue.subscribers.Add(subscriber)
 
 	go subscriber.pullMessage()
