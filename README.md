@@ -3,14 +3,19 @@
 >
 > 模块：`queue.Module`
 
-- [文档（国内）](https://farseer-go.gitee.io/)
-- [文档（国外）](https://farseer-go.github.io/doc/)
-- [开源（Github）](https://github.com/farseer-go/fs)
+- `Document`
+    - [English](https://farseer-go.gitee.io/en-us/)
+    - [中文](https://farseer-go.gitee.io/)
+    - [English](https://farseer-go.github.io/doc/en-us/)
+- Source
+    - [github](https://github.com/farseer-go/fs)
+
 
 ![](https://img.shields.io/github/stars/farseer-go?style=social)
 ![](https://img.shields.io/github/license/farseer-go/queue)
 ![](https://img.shields.io/github/go-mod/go-version/farseer-go/queue)
 ![](https://img.shields.io/github/v/release/farseer-go/queue)
+![Codecov](https://img.shields.io/codecov/c/github/farseer-go/queue)
 ![](https://img.shields.io/github/languages/code-size/farseer-go/queue)
 ![](https://img.shields.io/github/directory-file-count/farseer-go/queue)
 ![](https://goreportcard.com/badge/github.com/farseer-go/queue)
