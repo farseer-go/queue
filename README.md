@@ -15,7 +15,7 @@
 ![](https://img.shields.io/github/license/farseer-go/queue)
 ![](https://img.shields.io/github/go-mod/go-version/farseer-go/queue)
 ![](https://img.shields.io/github/v/release/farseer-go/queue)
-![Codecov](https://img.shields.io/codecov/c/github/farseer-go/queue)
+[![codecov](https://img.shields.io/codecov/c/github/farseer-go/queue)](https://codecov.io/gh/farseer-go/queue)
 ![](https://img.shields.io/github/languages/code-size/farseer-go/queue)
 ![](https://img.shields.io/github/directory-file-count/farseer-go/queue)
 ![](https://goreportcard.com/badge/github.com/farseer-go/queue)
