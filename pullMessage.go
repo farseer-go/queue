@@ -12,12 +12,10 @@ func (curSubscriber *subscriber) pullMessage() {
 	for {
 		// 如果未消费的长度小于1，则说明没有新的数据
 		if !curSubscriber.isHaveMessage() {
-			select {
-			case <-curSubscriber.notify:
-				// 如果通知里还有数据，则清空
-				for len(curSubscriber.notify) > 0 {
-					<-curSubscriber.notify
-				}
+			<-curSubscriber.notify
+			// 如果通知里还有数据，则清空
+			for len(curSubscriber.notify) > 0 {
+				<-curSubscriber.notify
 			}
 		}
 
@@ -37,8 +35,8 @@ func (curSubscriber *subscriber) pullMessage() {
 			continue
 		}
 
+		// 小于预期的设置时，等待100ms
 		if unConsumerLength < curSubscriber.pullCount {
-			// 小于预期的设置时，等待100ms
 			time.Sleep(100 * time.Millisecond)
 			unConsumerLength = curSubscriber.queueManager.queue.Count() - curSubscriber.offset - 1
 		}
@@ -57,14 +55,13 @@ func (curSubscriber *subscriber) pullMessage() {
 		remainingCount := curSubscriber.queueManager.queue.Count() - endIndex
 
 		// 执行客户端的消费
-		try := exception.Try(func() {
+		exception.Try(func() {
 			sw := stopwatch.StartNew()
 			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
 			flog.ComponentInfof("queue", "%s，耗时：%s", curSubscriber.subscribeName, sw.GetMillisecondsText())
 			// 保存本次消费的位置
 			curSubscriber.offset = endIndex - 1
-		})
-		try.CatchException(func(exp any) {
+		}).CatchException(func(exp any) {
 			flog.Error(exp)
 		})
 

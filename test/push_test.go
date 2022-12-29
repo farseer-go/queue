@@ -6,15 +6,16 @@ import (
 	"github.com/farseer-go/queue"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
-
-type testSubscribe struct {
-	lst collections.List[int]
-}
 
 func TestPush(t *testing.T) {
 	fs.Initialize[queue.Module]("unit test")
+	queue.MoveQueueInterval = 100 * time.Millisecond
 
+	assert.Panics(t, func() {
+		queue.Push("test", 0)
+	})
 	var aSum int
 	queue.Subscribe("test", "A", 2, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "A", subscribeName)
@@ -31,18 +32,12 @@ func TestPush(t *testing.T) {
 		bSum += lst.SumItem()
 	})
 
-	// todo：暂时注释
-	//myQueue := queue.dicQueue.GetValue("test")
-	//assert.Equal(t, 2, myQueue.subscribers.Count())
-	//
-	//for i := 0; i < 100; i++ {
-	//	queue.Push("test", i)
-	//}
-	//
-	//time.Sleep(100 * time.Millisecond)
-	//assert.Equal(t, 4950, aSum)
-	//assert.Equal(t, 4950, bSum)
-	//time.Sleep(6 * time.Second)
-	//assert.Equal(t, -1, myQueue.minOffset)
-	//assert.True(t, myQueue.queue.IsEmpty())
+	time.Sleep(150 * time.Millisecond)
+	for i := 0; i < 100; i++ {
+		queue.Push("test", i)
+	}
+
+	time.Sleep(200 * time.Millisecond)
+	assert.Equal(t, 4950, aSum)
+	assert.Equal(t, 4950, bSum)
 }

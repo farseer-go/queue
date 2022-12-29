@@ -2,9 +2,9 @@ package queue
 
 // Push 添加数据到队列中
 func Push(queueName string, message any) {
-	// 首先从订阅者中找到是否存在eventName
+	// 首先从订阅者中找到是否存在queueName
 	if !dicQueue.ContainsKey(queueName) {
-		panic("未找到队列名称：" + queueName + "，需要先通过订阅队列后，才能Push数据")
+		panic("未找到队列名称：" + queueName + "，需要先通过订阅队列后，才能Push数据，以防止内存泄露。")
 	}
 
 	// 添加数据到队列

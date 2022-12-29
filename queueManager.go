@@ -65,7 +65,7 @@ func (queueList *queueManager) moveQueue() {
 // 1分钟检查一下队列的消费长度
 func (queueList *queueManager) stat() {
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(MoveQueueInterval)
 		queueList.statLastIndex()
 
 		// 所有订阅者没有在执行的时候，做一次队列合并
