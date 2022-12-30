@@ -14,7 +14,7 @@ func Push(queueName string, message any) {
 	// 未执行中订阅者，发送有新消息通知
 	go func() {
 		sleepSubscribers := queueList.subscribers.Where(func(item *subscriber) bool {
-			return !item.isWork
+			return len(item.notify) == 0
 		}).ToArray()
 
 		// 通知有新的消息

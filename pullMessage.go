@@ -4,7 +4,6 @@ import (
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
-	"time"
 )
 
 // 每个订阅者独立消费
@@ -20,56 +19,46 @@ func (curSubscriber *subscriber) pullMessage() {
 		}
 
 		// 得出未消费的长度
-		unConsumerLength := curSubscriber.queueManager.queue.Count() - curSubscriber.offset - 1
-		if unConsumerLength < 1 {
-			continue
-		}
+		pullCount := curSubscriber.getPullCount()
 
 		// 设置为消费中
-		curSubscriber.isWork = true
-
-		// 正在迁移队列，这时不能消费（要在isWork=true之后判断）
-		if curSubscriber.queueManager.isMoveQueue {
-			time.Sleep(10 * time.Millisecond)
-			curSubscriber.isWork = false
-			continue
-		}
-
-		// 小于预期的设置时，等待100ms
-		if unConsumerLength < curSubscriber.pullCount {
-			time.Sleep(100 * time.Millisecond)
-			unConsumerLength = curSubscriber.queueManager.queue.Count() - curSubscriber.offset - 1
-		}
-
-		// 计算本次应拉取的数量
-		if unConsumerLength > curSubscriber.pullCount {
-			unConsumerLength = curSubscriber.pullCount
-		}
+		curSubscriber.queueManager.work()
 
 		// 计算当前订阅者应消费队列的起始位置
 		startIndex := curSubscriber.offset + 1
-		endIndex := startIndex + unConsumerLength
+		endIndex := startIndex + pullCount
 
 		// 得到本次消费的队列切片
-		curQueue := curSubscriber.queueManager.queue.Range(startIndex, unConsumerLength).ToListAny()
+		curQueue := curSubscriber.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := curSubscriber.queueManager.queue.Count() - endIndex
 
 		// 执行客户端的消费
 		exception.Try(func() {
 			sw := stopwatch.StartNew()
 			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
-			flog.ComponentInfof("queue", "%s，耗时：%s", curSubscriber.subscribeName, sw.GetMillisecondsText())
-			// 保存本次消费的位置
-			curSubscriber.offset = endIndex - 1
+			flog.ComponentInfof("queue", "Subscribe：%s，PullCount：%d，ElapsedTime：%s", curSubscriber.subscribeName, pullCount, sw.GetMillisecondsText())
 		}).CatchException(func(exp any) {
 			flog.Error(exp)
 		})
 
-		curSubscriber.isWork = false
+		// 保存本次消费的位置
+		curSubscriber.offset = endIndex - 1
+
+		curSubscriber.queueManager.unWork()
 	}
 }
 
 // 是否有新的消息
 func (curSubscriber *subscriber) isHaveMessage() bool {
 	return curSubscriber.queueManager.queue.Count()-curSubscriber.offset-1 > 0
+}
+
+// 计算本次可以消费的数量
+func (curSubscriber *subscriber) getPullCount() int {
+	pullCount := curSubscriber.queueManager.queue.Count() - curSubscriber.offset - 1
+	// 如果超出每次拉取的数量，则以拉取设置为准
+	if pullCount > curSubscriber.pullCount {
+		pullCount = curSubscriber.pullCount
+	}
+	return pullCount
 }

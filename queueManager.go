@@ -2,6 +2,8 @@ package queue
 
 import (
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/flog"
+	"sync"
 	"time"
 )
 
@@ -21,8 +23,8 @@ type queueManager struct {
 	minOffset int
 	// 订阅者
 	subscribers collections.List[*subscriber]
-	// 是否在迁移队列
-	isMoveQueue bool
+	// 读写锁
+	lock sync.RWMutex
 }
 
 func newQueueManager(queueName string) *queueManager {
@@ -34,9 +36,29 @@ func newQueueManager(queueName string) *queueManager {
 	}
 }
 
+// 定时检查一下队列的消费长度
+func (queueList *queueManager) stat() {
+	for {
+		time.Sleep(MoveQueueInterval)
+		queueList.lock.Lock()
+
+		// 得到当前所有订阅者的最后消费的位置的最小值
+		queueList.statLastIndex()
+
+		// 所有订阅者没有在执行的时候，做一次队列合并
+		if queueList.minOffset > -1 {
+			preLength := queueList.queue.Count()
+			queueList.moveQueue()
+			flog.ComponentInfof("queue", "Migrating Data，QueueName：%s，queueLength：%d -> %d", queueList.name, preLength, queueList.queue.Count())
+		}
+		queueList.lock.Unlock()
+	}
+}
+
 // 得到当前所有订阅者的最后消费的位置的最小值
 func (queueList *queueManager) statLastIndex() {
 	if queueList.subscribers.Count() > 0 {
+
 		queueList.minOffset = queueList.subscribers.Min(func(item *subscriber) any {
 			return item.offset
 		}).(int)
@@ -45,36 +67,21 @@ func (queueList *queueManager) statLastIndex() {
 
 // 缩减使用过的队列
 func (queueList *queueManager) moveQueue() {
-	// 没有使用，则不缩减
-	if queueList.minOffset < 0 {
-		return
-	}
-
-	// 缩减队列
-	queueList.minOffset += 1
-
 	// 裁剪队列，将头部已消费的移除
-	queueList.queue = queueList.queue.RangeStart(queueList.minOffset).ToListAny()
+	queueList.queue = queueList.queue.RangeStart(queueList.minOffset + 1).ToListAny()
+
 	// 设置每个订阅者的偏移量
-	for _, subscriberQueue := range queueList.subscribers.ToArray() {
-		subscriberQueue.offset -= queueList.minOffset
+	for i := 0; i < queueList.subscribers.Count(); i++ {
+		queueList.subscribers.Index(i).offset -= queueList.minOffset + 1
 	}
-	queueList.minOffset = -1
 }
 
-// 1分钟检查一下队列的消费长度
-func (queueList *queueManager) stat() {
-	for {
-		time.Sleep(MoveQueueInterval)
-		queueList.statLastIndex()
+// 消费中
+func (queueList *queueManager) work() {
+	queueList.lock.RLock()
+}
 
-		// 所有订阅者没有在执行的时候，做一次队列合并
-		if queueList.minOffset > -1 && queueList.subscribers.All(func(item *subscriber) bool {
-			return !item.isWork && len(item.notify) == 0
-		}) {
-			queueList.isMoveQueue = true
-			queueList.moveQueue()
-			queueList.isMoveQueue = false
-		}
-	}
+// 消费完毕
+func (queueList *queueManager) unWork() {
+	queueList.lock.RUnlock()
 }

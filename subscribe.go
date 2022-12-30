@@ -14,8 +14,6 @@ type subscriber struct {
 	pullCount int
 	// 所属的队列
 	queueManager *queueManager
-	// 是否正在执行消费中
-	isWork bool
 	// 等待通知有新的消息
 	notify chan bool
 }
