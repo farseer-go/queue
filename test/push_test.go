@@ -3,7 +3,6 @@ package test
 import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
-	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/queue"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -12,7 +11,6 @@ import (
 
 func TestPush(t *testing.T) {
 	fs.Initialize[queue.Module]("unit test")
-	configure.SetDefault("Log.Component.queue", true)
 	queue.MoveQueueInterval = 100 * time.Millisecond
 
 	assert.Panics(t, func() {
@@ -41,7 +39,7 @@ func TestPush(t *testing.T) {
 	time.Sleep(550 * time.Millisecond)
 	for i := 0; i < 100; i++ {
 		queue.Push("test", i)
-		time.Sleep(1)
+		time.Sleep(1 * time.Microsecond)
 	}
 
 	time.Sleep(200 * time.Millisecond)
