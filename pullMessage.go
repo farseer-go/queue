@@ -50,11 +50,17 @@ func (curSubscriber *subscriber) pullMessage() {
 
 // 是否有新的消息
 func (curSubscriber *subscriber) isHaveMessage() bool {
+	curSubscriber.queueManager.work()
+	defer curSubscriber.queueManager.unWork()
+	
 	return curSubscriber.queueManager.queue.Count()-curSubscriber.offset-1 > 0
 }
 
 // 计算本次可以消费的数量
 func (curSubscriber *subscriber) getPullCount() int {
+	curSubscriber.queueManager.work()
+	defer curSubscriber.queueManager.unWork()
+
 	pullCount := curSubscriber.queueManager.queue.Count() - curSubscriber.offset - 1
 	// 如果超出每次拉取的数量，则以拉取设置为准
 	if pullCount > curSubscriber.pullCount {
