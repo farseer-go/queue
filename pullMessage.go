@@ -38,7 +38,7 @@ func (curSubscriber *subscriber) pullMessage() {
 			curSubscriber.subscribeFunc(curSubscriber.subscribeName, curQueue, remainingCount)
 			flog.ComponentInfof("queue", "Subscribe：%s，PullCount：%d，ElapsedTime：%s", curSubscriber.subscribeName, pullCount, sw.GetMillisecondsText())
 		}).CatchException(func(exp any) {
-			flog.Error(exp)
+			_ = flog.Error(exp)
 		})
 
 		// 保存本次消费的位置
@@ -52,7 +52,7 @@ func (curSubscriber *subscriber) pullMessage() {
 func (curSubscriber *subscriber) isHaveMessage() bool {
 	curSubscriber.queueManager.work()
 	defer curSubscriber.queueManager.unWork()
-	
+
 	return curSubscriber.queueManager.queue.Count()-curSubscriber.offset-1 > 0
 }
 
