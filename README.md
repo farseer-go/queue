@@ -17,7 +17,7 @@
 ![](https://img.shields.io/github/v/release/farseer-go/queue)
 [![codecov](https://img.shields.io/codecov/c/github/farseer-go/queue)](https://codecov.io/gh/farseer-go/queue)
 ![](https://img.shields.io/github/languages/code-size/farseer-go/queue)
-[![Build](https://github.com/farseer-go/queue/actions/workflows/go.yml/badge.svg)](https://github.com/farseer-go/queue/actions/workflows/go.yml)
+[![Build](https://github.com/farseer-go/queue/actions/workflows/test.yml/badge.svg)](https://github.com/farseer-go/queue/actions/workflows/test.yml)
 ![](https://goreportcard.com/badge/github.com/farseer-go/queue)
 
 ## 概述
