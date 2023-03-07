@@ -17,12 +17,3 @@ func (module Module) PreInitialize() {
 	dicQueue = collections.NewDictionary[string, *queueManager]()
 	MoveQueueInterval = time.Second * 5
 }
-
-func (module Module) Initialize() {
-}
-
-func (module Module) PostInitialize() {
-}
-
-func (module Module) Shutdown() {
-}
