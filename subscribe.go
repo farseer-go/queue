@@ -1,6 +1,10 @@
 package queue
 
-import "github.com/farseer-go/collections"
+import (
+	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/trace"
+)
 
 // 订阅者的队列
 type subscriber struct {
@@ -16,6 +20,8 @@ type subscriber struct {
 	queueManager *queueManager
 	// 等待通知有新的消息
 	notify chan bool
+	// 链路追踪
+	traceManager trace.IManager
 }
 
 func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, queue *queueManager) *subscriber {
@@ -26,6 +32,7 @@ func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, q
 		pullCount:     pullCount,
 		queueManager:  queue,
 		notify:        make(chan bool, 100000),
+		traceManager:  container.Resolve[trace.IManager](),
 	}
 }
 
