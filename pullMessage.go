@@ -20,6 +20,10 @@ func (receiver *subscriber) pullMessage() {
 
 		// 得出未消费的长度
 		pullCount := receiver.getPullCount()
+		// 本次消费长度为0，跳出
+		if pullCount == 0 {
+			continue
+		}
 
 		// 设置为消费中
 		receiver.queueManager.work()
