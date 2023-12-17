@@ -21,8 +21,10 @@ func TestPush(t *testing.T) {
 	var lockA sync.Mutex
 	queue.Subscribe("test", "A", 2, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "A", subscribeName)
-		var lst collections.List[int]
-		lstMessage.MapToList(&lst)
+		lst := collections.NewList[int]()
+		lstMessage.Foreach(func(item *any) {
+			lst.Add((*item).(int))
+		})
 
 		lockA.Lock()
 		defer lockA.Unlock()
@@ -33,8 +35,10 @@ func TestPush(t *testing.T) {
 	var lockB sync.Mutex
 	queue.Subscribe("test", "B", 4, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "B", subscribeName)
-		var lst collections.List[int]
-		lstMessage.MapToList(&lst)
+		lst := collections.NewList[int]()
+		lstMessage.Foreach(func(item *any) {
+			lst.Add((*item).(int))
+		})
 
 		lockB.Lock()
 		defer lockB.Unlock()
