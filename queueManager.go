@@ -49,7 +49,7 @@ func (queueList *queueManager) stat() {
 		if queueList.minOffset > -1 {
 			preLength := queueList.queue.Count()
 			queueList.moveQueue()
-			flog.ComponentInfof("queue", "Migrating Data，ConsumerQueueName：%s，queueLength：%d -> %d", queueList.name, preLength, queueList.queue.Count())
+			flog.ComponentInfof("queue", "Migrating Data，QueueName：%s，queueLength：%d -> %d", queueList.name, preLength, queueList.queue.Count())
 		}
 		queueList.lock.Unlock()
 	}
