@@ -37,7 +37,7 @@ func (receiver *subscriber) pullMessage() {
 		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
 
-		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.subscribeName)
+		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
 		// 执行客户端的消费
 		exception.Try(func() {
 			sw := stopwatch.StartNew()
