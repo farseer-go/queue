@@ -4,6 +4,7 @@ import (
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
+	"time"
 )
 
 // 每个订阅者独立消费
@@ -36,18 +37,19 @@ func (receiver *subscriber) pullMessage() {
 		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
 
-		entryQueueConsumer := receiver.traceManager.EntryQueueConsumer(receiver.subscribeName)
+		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.subscribeName)
 		// 执行客户端的消费
 		exception.Try(func() {
 			sw := stopwatch.StartNew()
 			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
+			// 保存本次消费的位置
+			receiver.offset = endIndex - 1
 			flog.ComponentInfof("queue", "Subscribe：%s，PullCount：%d，ElapsedTime：%s", receiver.subscribeName, pullCount, sw.GetMillisecondsText())
 		}).CatchException(func(exp any) {
-			entryQueueConsumer.Error(flog.Error(exp))
+			traceContext.Error(flog.Error(exp))
+			<-time.After(time.Second)
 		})
-		entryQueueConsumer.End()
-		// 保存本次消费的位置
-		receiver.offset = endIndex - 1
+		traceContext.End()
 
 		receiver.queueManager.unWork()
 	}
