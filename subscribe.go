@@ -4,6 +4,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/trace"
+	"time"
 )
 
 // 订阅者的队列
@@ -22,14 +23,17 @@ type subscriber struct {
 	notify chan bool
 	// 链路追踪
 	traceManager trace.IManager
+	// 休眠时间
+	sleepTime time.Duration
 }
 
-func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, queue *queueManager) *subscriber {
+func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, sleepTime time.Duration, queue *queueManager) *subscriber {
 	return &subscriber{
 		subscribeName: subscribeName,
 		offset:        -1,
 		subscribeFunc: fn,
 		pullCount:     pullCount,
+		sleepTime:     sleepTime,
 		queueManager:  queue,
 		notify:        make(chan bool, 100000),
 		traceManager:  container.Resolve[trace.IManager](),
@@ -44,7 +48,7 @@ type queueSubscribeFunc func(subscribeName string, lstMessage collections.ListAn
 // subscribeName = 订阅者名称
 // pullCount = 每次拉取的数量
 // queueSubscribeFunc = 消费逻辑
-func Subscribe(queueName string, subscribeName string, pullCount int, fn queueSubscribeFunc) {
+func Subscribe(queueName string, subscribeName string, pullCount int, sleepTime time.Duration, fn queueSubscribeFunc) {
 	// 判断队列中是否有queueName这个队列，如果没有，则创建这个队列
 	if !dicQueue.ContainsKey(queueName) {
 		manager := newQueueManager(queueName)
@@ -56,7 +60,7 @@ func Subscribe(queueName string, subscribeName string, pullCount int, fn queueSu
 	queue := dicQueue.GetValue(queueName)
 
 	// 添加订阅者
-	subscriber := newSubscriber(subscribeName, fn, pullCount, queue)
+	subscriber := newSubscriber(subscribeName, fn, pullCount, sleepTime, queue)
 	queue.subscribers.Add(subscriber)
 
 	go subscriber.pullMessage()

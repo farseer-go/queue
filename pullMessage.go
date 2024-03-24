@@ -52,6 +52,11 @@ func (receiver *subscriber) pullMessage() {
 		traceContext.End()
 
 		receiver.queueManager.unWork()
+
+		// 休眠指定时间
+		if receiver.sleepTime > 0 {
+			time.Sleep(receiver.sleepTime)
+		}
 	}
 }
 
