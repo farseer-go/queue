@@ -65,7 +65,7 @@ func (receiver *subscriber) isHaveMessage() bool {
 	receiver.queueManager.work()
 	defer receiver.queueManager.unWork()
 
-	return receiver.queueManager.queue.Count()-receiver.offset-1 > 0
+	return receiver.queueManager.queue.Count() - receiver.offset-1 > 0
 }
 
 // 计算本次可以消费的数量
