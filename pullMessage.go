@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
@@ -10,6 +11,7 @@ import (
 // 每个订阅者独立消费
 func (receiver *subscriber) pullMessage() {
 	for {
+		asyncLocal.GC()
 		// 如果未消费的长度小于1，则说明没有新的数据
 		if !receiver.isHaveMessage() {
 			<-receiver.notify
@@ -65,7 +67,7 @@ func (receiver *subscriber) isHaveMessage() bool {
 	receiver.queueManager.work()
 	defer receiver.queueManager.unWork()
 
-	return receiver.queueManager.queue.Count() - receiver.offset-1 > 0
+	return receiver.queueManager.queue.Count()-receiver.offset-1 > 0
 }
 
 // 计算本次可以消费的数量
