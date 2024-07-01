@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
@@ -11,23 +10,24 @@ import (
 // 每个订阅者独立消费
 func (receiver *subscriber) pullMessage() {
 	for {
-		asyncLocal.GC()
+		//asyncLocal.GC()
+		//fmt.Printf("队列名：%s，订阅者：%s，等待消息\n", receiver.queueManager.name, receiver.subscribeName)
 		// 如果未消费的长度小于1，则说明没有新的数据
 		if !receiver.isHaveMessage() {
+			//fmt.Printf("队列名：%s，订阅者：%s，没有数据，等待通知\n", receiver.queueManager.name, receiver.subscribeName)
 			<-receiver.notify
-			// 如果通知里还有数据，则清空
-			for len(receiver.notify) > 0 {
-				<-receiver.notify
-			}
 		}
 
 		// 得出未消费的长度
 		pullCount := receiver.getPullCount()
+		//fmt.Printf("队列名：%s，订阅者：%s，数据来了，共%d条\n", receiver.queueManager.name, receiver.subscribeName, pullCount)
+
 		// 本次消费长度为0，跳出
 		if pullCount == 0 {
 			continue
 		}
 
+		receiver.notify = make(chan bool, 100000)
 		// 设置为消费中
 		receiver.queueManager.work()
 
