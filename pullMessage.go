@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
@@ -10,8 +11,6 @@ import (
 // 每个订阅者独立消费
 func (receiver *subscriber) pullMessage() {
 	for {
-		//asyncLocal.GC()
-		//fmt.Printf("队列名：%s，订阅者：%s，等待消息\n", receiver.queueManager.name, receiver.subscribeName)
 		// 如果未消费的长度小于1，则说明没有新的数据
 		if !receiver.isHaveMessage() {
 			//fmt.Printf("队列名：%s，订阅者：%s，没有数据，等待通知\n", receiver.queueManager.name, receiver.subscribeName)
@@ -52,6 +51,7 @@ func (receiver *subscriber) pullMessage() {
 			<-time.After(time.Second)
 		})
 		traceContext.End()
+		asyncLocal.Release()
 
 		receiver.queueManager.unWork()
 
