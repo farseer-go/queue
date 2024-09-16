@@ -39,6 +39,7 @@ func (receiver *subscriber) pullMessage() {
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
 
 		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
+		var err error
 		// 执行客户端的消费
 		exception.Try(func() {
 			sw := stopwatch.StartNew()
@@ -47,10 +48,10 @@ func (receiver *subscriber) pullMessage() {
 			receiver.offset = endIndex - 1
 			flog.ComponentInfof("queue", "Subscribe：%s，PullCount：%d，ElapsedTime：%s", receiver.subscribeName, pullCount, sw.GetMillisecondsText())
 		}).CatchException(func(exp any) {
-			traceContext.Error(flog.Error(exp))
+			err = flog.Error(exp)
 			<-time.After(time.Second)
 		})
-		traceContext.End()
+		traceContext.End(err)
 		asyncLocal.Release()
 
 		receiver.queueManager.unWork()

@@ -19,7 +19,7 @@ func TestPush(t *testing.T) {
 	})
 	var aSum int
 	var lockA sync.Mutex
-	queue.Subscribe("test", "A", 2, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+	queue.Subscribe("test", "A", 2, 0, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "A", subscribeName)
 		lst := collections.NewList[int]()
 		lstMessage.Foreach(func(item *any) {
@@ -33,7 +33,7 @@ func TestPush(t *testing.T) {
 
 	var bSum int
 	var lockB sync.Mutex
-	queue.Subscribe("test", "B", 4, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+	queue.Subscribe("test", "B", 4, 0, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "B", subscribeName)
 		lst := collections.NewList[int]()
 		lstMessage.Foreach(func(item *any) {
@@ -45,7 +45,7 @@ func TestPush(t *testing.T) {
 		bSum += lst.SumItem()
 	})
 
-	queue.Subscribe("test", "C", 100, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
+	queue.Subscribe("test", "C", 100, 0, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		panic("测试panic")
 	})
 
