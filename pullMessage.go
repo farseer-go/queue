@@ -1,11 +1,14 @@
 package queue
 
 import (
+	"time"
+
 	"github.com/farseer-go/fs/asyncLocal"
+	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/stopwatch"
-	"time"
+	"github.com/farseer-go/fs/trace"
 )
 
 // 每个订阅者独立消费
@@ -51,7 +54,7 @@ func (receiver *subscriber) pullMessage() {
 			err = flog.Error(exp)
 			<-time.After(time.Second)
 		})
-		traceContext.End(err)
+		container.Resolve[trace.IManager]().Push(traceContext, err)
 		asyncLocal.Release()
 
 		receiver.queueManager.unWork()
