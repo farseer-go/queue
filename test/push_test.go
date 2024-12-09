@@ -1,13 +1,14 @@
 package test
 
 import (
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/queue"
 	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
-	"time"
 )
 
 func TestPush(t *testing.T) {
@@ -63,5 +64,4 @@ func TestPush(t *testing.T) {
 	defer lockB.Unlock()
 	assert.Equal(t, 4950, aSum)
 	assert.Equal(t, 4950, bSum)
-	//flog.Info("finish")
 }

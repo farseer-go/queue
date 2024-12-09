@@ -1,10 +1,11 @@
 package queue
 
 import (
-	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/flog"
 	"sync"
 	"time"
+
+	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/flog"
 )
 
 // 队列
@@ -68,7 +69,8 @@ func (queueList *queueManager) statLastIndex() {
 // 缩减使用过的队列
 func (queueList *queueManager) moveQueue() {
 	// 裁剪队列，将头部已消费的移除
-	queueList.queue = queueList.queue.RangeStart(queueList.minOffset + 1).ToListAny()
+	arr := queueList.queue.RangeStart(queueList.minOffset + 1).ToArray()
+	queueList.queue = collections.NewListAny(arr...)
 
 	// 设置每个订阅者的偏移量
 	for i := 0; i < queueList.subscribers.Count(); i++ {
