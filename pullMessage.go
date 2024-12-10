@@ -54,6 +54,7 @@ func (receiver *subscriber) pullMessage() {
 			err = flog.Error(exp)
 			<-time.After(time.Second)
 		})
+		curQueue.Clear()
 		container.Resolve[trace.IManager]().Push(traceContext, err)
 		asyncLocal.Release()
 
