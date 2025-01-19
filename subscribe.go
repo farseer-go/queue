@@ -1,11 +1,18 @@
 package queue
 
 import (
-	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/trace"
 	"time"
+
+	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/asyncLocal"
+	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/trace"
 )
+
+// Consumer 消费
+type queueSubscribeFunc func(subscribeName string, lstMessage collections.ListAny, remainingCount int)
 
 // 订阅者的队列
 type subscriber struct {
@@ -27,22 +34,6 @@ type subscriber struct {
 	sleepTime time.Duration
 }
 
-func newSubscriber(subscribeName string, fn queueSubscribeFunc, pullCount int, sleepTime time.Duration, queue *queueManager) *subscriber {
-	return &subscriber{
-		subscribeName: subscribeName,
-		offset:        -1,
-		subscribeFunc: fn,
-		pullCount:     pullCount,
-		sleepTime:     sleepTime,
-		queueManager:  queue,
-		notify:        make(chan bool, 100000),
-		traceManager:  container.Resolve[trace.IManager](),
-	}
-}
-
-// Consumer 消费
-type queueSubscribeFunc func(subscribeName string, lstMessage collections.ListAny, remainingCount int)
-
 // Subscribe 订阅消息
 // queueName = 队列名称
 // subscribeName = 订阅者名称
@@ -60,8 +51,77 @@ func Subscribe(queueName string, subscribeName string, pullCount int, sleepTime 
 	queue := dicQueue.GetValue(queueName)
 
 	// 添加订阅者
-	subscriber := newSubscriber(subscribeName, fn, pullCount, sleepTime, queue)
+	subscriber := &subscriber{
+		subscribeName: subscribeName,
+		offset:        -1,
+		subscribeFunc: fn,
+		pullCount:     pullCount,
+		sleepTime:     sleepTime,
+		queueManager:  queue,
+		notify:        make(chan bool, 100000),
+		traceManager:  container.Resolve[trace.IManager](),
+	}
 	queue.subscribers.Add(subscriber)
 
 	go subscriber.pullMessage()
+}
+
+// 计算本次可以消费的数量
+func (receiver *subscriber) getPullCount() int {
+	receiver.queueManager.work()
+	defer receiver.queueManager.unWork()
+
+	pullCount := receiver.queueManager.queue.Count() - receiver.offset - 1
+	// 如果超出每次拉取的数量，则以拉取设置为准
+	if pullCount > receiver.pullCount {
+		pullCount = receiver.pullCount
+	}
+	return pullCount
+}
+
+// 每个订阅者独立消费
+func (receiver *subscriber) pullMessage() {
+	for {
+		// 得出未消费的长度
+		pullCount := receiver.getPullCount()
+		// 如果未消费的长度小于1，则说明没有新的数据
+		if pullCount < 1 {
+			<-receiver.notify
+			continue
+		}
+
+		receiver.notify = make(chan bool, 100000)
+		// 设置为消费中
+		receiver.queueManager.work()
+
+		// 计算当前订阅者应消费队列的起始位置
+		startIndex := receiver.offset + 1
+		endIndex := startIndex + pullCount
+
+		// 得到本次消费的队列切片
+		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
+		remainingCount := receiver.queueManager.queue.Count() - endIndex
+
+		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
+		var err error
+		// 执行客户端的消费
+		exception.Try(func() {
+			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
+			// 保存本次消费的位置
+			receiver.offset = endIndex - 1
+		}).CatchException(func(exp any) {
+			err = flog.Error(exp)
+			<-time.After(time.Second)
+		})
+		curQueue.Clear()
+		container.Resolve[trace.IManager]().Push(traceContext, err)
+		asyncLocal.Release()
+
+		receiver.queueManager.unWork()
+
+		// 休眠指定时间
+		if receiver.sleepTime > 0 {
+			time.Sleep(receiver.sleepTime)
+		}
+	}
 }

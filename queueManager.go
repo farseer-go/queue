@@ -38,21 +38,21 @@ func newQueueManager(queueName string) *queueManager {
 }
 
 // 定时检查一下队列的消费长度
-func (queueList *queueManager) stat() {
+func (receiver *queueManager) stat() {
 	for {
 		time.Sleep(MoveQueueInterval)
-		queueList.lock.Lock()
+		receiver.lock.Lock()
 
 		// 得到当前所有订阅者的最后消费的位置的最小值
-		queueList.statLastIndex()
+		receiver.statLastIndex()
 
 		// 所有订阅者没有在执行的时候，做一次队列合并
-		if queueList.minOffset > -1 {
-			preLength := queueList.queue.Count()
-			queueList.moveQueue()
-			flog.ComponentInfof("queue", "Migrating Data，QueueName：%s，queueLength：%d -> %d", queueList.name, preLength, queueList.queue.Count())
+		if receiver.minOffset > -1 {
+			preLength := receiver.queue.Count()
+			receiver.moveQueue()
+			flog.ComponentInfof("queue", "Migrating Data，QueueName：%s，queueLength：%d -> %d", receiver.name, preLength, receiver.queue.Count())
 		}
-		queueList.lock.Unlock()
+		receiver.lock.Unlock()
 	}
 }
 
