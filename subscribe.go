@@ -73,7 +73,7 @@ func (receiver *subscriber) getPullCount() int {
 
 	pullCount := receiver.queueManager.queue.Count() - receiver.offset - 1
 	// 如果超出每次拉取的数量，则以拉取设置为准
-	if pullCount > receiver.pullCount {
+	if receiver.pullCount > 0 && pullCount > receiver.pullCount {
 		pullCount = receiver.pullCount
 	}
 	return pullCount
