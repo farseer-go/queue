@@ -7,7 +7,6 @@ import (
 	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/exception"
-	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/trace"
 )
 
@@ -103,18 +102,16 @@ func (receiver *subscriber) pullMessage() {
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
 
 		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
-		var err error
 		// 执行客户端的消费
 		exception.Try(func() {
 			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
 			// 保存本次消费的位置
 			receiver.offset = endIndex - 1
 		}).CatchException(func(exp any) {
-			err = flog.Error(exp)
 			<-time.After(time.Second)
 		})
 		curQueue.Clear()
-		container.Resolve[trace.IManager]().Push(traceContext, err)
+		container.Resolve[trace.IManager]().Push(traceContext, nil)
 		asyncLocal.Release()
 
 		receiver.queueManager.unWork()
