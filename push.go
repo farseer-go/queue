@@ -9,17 +9,18 @@ func Push(queueName string, message any) {
 
 	// 添加数据到队列
 	queueList := dicQueue.GetValue(queueName)
+
+	queueList.queueLock.Lock()
 	queueList.queue.Add(message)
+	queueList.queueLock.Unlock()
 
 	// 未执行中订阅者，发送有新消息通知
-	go func() {
-		sleepSubscribers := queueList.subscribers.Where(func(item *subscriber) bool {
-			return len(item.notify) == 0
-		}).ToArray()
+	sleepSubscribers := queueList.subscribers.Where(func(item *subscriber) bool {
+		return len(item.notify) == 0
+	}).ToArray()
 
-		// 通知有新的消息
-		for _, sleepSubscriber := range sleepSubscribers {
-			sleepSubscriber.notify <- true
-		}
-	}()
+	// 通知有新的消息
+	for _, sleepSubscriber := range sleepSubscribers {
+		sleepSubscriber.notify <- true
+	}
 }

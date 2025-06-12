@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/farseer-go/collections"
@@ -18,7 +19,7 @@ type subscriber struct {
 	// 订阅者名称
 	subscribeName string
 	// 最后消费的位置
-	offset int
+	offset int64
 	// 订阅者
 	subscribeFunc queueSubscribeFunc
 	// 每次拉取的数量
@@ -60,17 +61,14 @@ func Subscribe(queueName string, subscribeName string, pullCount int, sleepTime 
 		notify:        make(chan bool, 100000),
 		traceManager:  container.Resolve[trace.IManager](),
 	}
-	queue.subscribers.Add(subscriber)
 
+	queue.subscribers.Add(subscriber)
 	go subscriber.pullMessage()
 }
 
 // 计算本次可以消费的数量
 func (receiver *subscriber) getPullCount() int {
-	receiver.queueManager.work()
-	defer receiver.queueManager.unWork()
-
-	pullCount := receiver.queueManager.queue.Count() - receiver.offset - 1
+	pullCount := receiver.queueManager.queue.Count() - int(receiver.offset) - 1
 	// 如果超出每次拉取的数量，则以拉取设置为准
 	if receiver.pullCount > 0 && pullCount > receiver.pullCount {
 		pullCount = receiver.pullCount
@@ -89,32 +87,36 @@ func (receiver *subscriber) pullMessage() {
 			continue
 		}
 
-		receiver.notify = make(chan bool, 100000)
 		// 设置为消费中
-		receiver.queueManager.work()
+		receiver.queueManager.queueLock.RLock()
+
+		//receiver.notify = make(chan bool, 100000)
+		for len(receiver.notify) > 0 {
+			<-receiver.notify
+		}
 
 		// 计算当前订阅者应消费队列的起始位置
-		startIndex := receiver.offset + 1
+		startIndex := int(receiver.offset) + 1
 		endIndex := startIndex + pullCount
 
 		// 得到本次消费的队列切片
 		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
+		receiver.queueManager.queueLock.RUnlock()
 
 		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
 		// 执行客户端的消费
 		exception.Try(func() {
 			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
 			// 保存本次消费的位置
-			receiver.offset = endIndex - 1
+			atomic.StoreInt64(&receiver.offset, int64(endIndex-1))
 		}).CatchException(func(exp any) {
 			<-time.After(time.Second)
 		})
+
 		curQueue.Clear()
 		container.Resolve[trace.IManager]().Push(traceContext, nil)
 		asyncLocal.Release()
-
-		receiver.queueManager.unWork()
 
 		// 休眠指定时间
 		if receiver.sleepTime > 0 {

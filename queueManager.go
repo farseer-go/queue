@@ -2,10 +2,10 @@ package queue
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/flog"
 )
 
 // 队列
@@ -25,7 +25,7 @@ type queueManager struct {
 	// 订阅者
 	subscribers collections.List[*subscriber]
 	// 读写锁
-	lock sync.RWMutex
+	queueLock sync.RWMutex
 }
 
 func newQueueManager(queueName string) *queueManager {
@@ -41,49 +41,36 @@ func newQueueManager(queueName string) *queueManager {
 func (receiver *queueManager) stat() {
 	for {
 		time.Sleep(MoveQueueInterval)
-		receiver.lock.Lock()
-
 		// 得到当前所有订阅者的最后消费的位置的最小值
 		receiver.statLastIndex()
 
 		// 所有订阅者没有在执行的时候，做一次队列合并
 		if receiver.minOffset > -1 {
-			preLength := receiver.queue.Count()
+			receiver.queueLock.Lock()
 			receiver.moveQueue()
-			flog.ComponentInfof("queue", "Migrating Data，QueueName：%s，queueLength：%d -> %d", receiver.name, preLength, receiver.queue.Count())
+			receiver.queueLock.Unlock()
 		}
-		receiver.lock.Unlock()
 	}
 }
 
 // 得到当前所有订阅者的最后消费的位置的最小值
 func (queueList *queueManager) statLastIndex() {
+	// 计算当前所有订阅者的最后消费的位置的最小值
 	if queueList.subscribers.Count() > 0 {
-
-		queueList.minOffset = queueList.subscribers.Min(func(item *subscriber) any {
-			return item.offset
-		}).(int)
+		queueList.minOffset = int(queueList.subscribers.Min(func(item *subscriber) any {
+			return atomic.LoadInt64(&item.offset)
+		}).(int64))
 	}
 }
 
 // 缩减使用过的队列
-func (queueList *queueManager) moveQueue() {
+func (receiver *queueManager) moveQueue() {
 	// 裁剪队列，将头部已消费的移除
-	arr := queueList.queue.RangeStart(queueList.minOffset + 1).ToArray()
-	queueList.queue = collections.NewListAny(arr...)
+	arr := receiver.queue.RangeStart(receiver.minOffset + 1).ToArray()
+	receiver.queue = collections.NewListAny(arr...)
 
 	// 设置每个订阅者的偏移量
-	for i := 0; i < queueList.subscribers.Count(); i++ {
-		queueList.subscribers.Index(i).offset -= queueList.minOffset + 1
+	for i := 0; i < receiver.subscribers.Count(); i++ {
+		atomic.AddInt64(&receiver.subscribers.Index(i).offset, -int64(receiver.minOffset)-1)
 	}
-}
-
-// 消费中
-func (queueList *queueManager) work() {
-	queueList.lock.RLock()
-}
-
-// 消费完毕
-func (queueList *queueManager) unWork() {
-	queueList.lock.RUnlock()
 }
