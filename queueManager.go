@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/flog"
 )
 
 // 队列
@@ -40,8 +41,10 @@ func newQueueManager(queueName string) *queueManager {
 func (receiver *queueManager) stat() {
 	for {
 		time.Sleep(MoveQueueInterval)
-		// 得到当前所有订阅者的最后消费的位置的最小值
-		receiver.statLastIndex()
+		// 计算当前所有订阅者的最后消费的位置的最小值
+		receiver.minOffset = receiver.subscribers.Min(func(item *subscriber) any {
+			return item.offset //return atomic.LoadInt64(&item.offset)
+		}).(int)
 
 		// 所有订阅者没有在执行的时候，做一次队列合并
 		if receiver.minOffset > -1 {
@@ -52,21 +55,16 @@ func (receiver *queueManager) stat() {
 	}
 }
 
-// 得到当前所有订阅者的最后消费的位置的最小值
-func (queueList *queueManager) statLastIndex() {
-	// 计算当前所有订阅者的最后消费的位置的最小值
-	if queueList.subscribers.Count() > 0 {
-		queueList.minOffset = queueList.subscribers.Min(func(item *subscriber) any {
-			//return atomic.LoadInt64(&item.offset)
-			return item.offset
-		}).(int)
-	}
-}
-
 // 缩减使用过的队列
 func (receiver *queueManager) moveQueue() {
+	// ⚡ 防御性检查：确保 minOffset 合法
+	if receiver.minOffset < 0 || receiver.minOffset >= receiver.queue.Count() {
+		flog.Warningf("本地Queue '%s' minOffset=%d 大于 整个queue的数量=%d，", receiver.name, receiver.minOffset, receiver.queue.Count())
+		return
+	}
+
 	// 裁剪队列，将头部已消费的移除
-	arr := receiver.queue.RangeStart(int(receiver.minOffset + 1)).ToArray()
+	arr := receiver.queue.RangeStart(receiver.minOffset + 1).ToArray()
 	receiver.queue = collections.NewListAny(arr...)
 
 	// 设置每个订阅者的偏移量
