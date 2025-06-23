@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"sync/atomic"
 	"time"
 
 	"github.com/farseer-go/collections"
@@ -19,7 +18,7 @@ type subscriber struct {
 	// 订阅者名称
 	subscribeName string
 	// 最后消费的位置
-	offset int64
+	offset int
 	// 订阅者
 	subscribeFunc queueSubscribeFunc
 	// 每次拉取的数量
@@ -96,7 +95,7 @@ func (receiver *subscriber) pullMessage() {
 		}
 
 		// 计算当前订阅者应消费队列的起始位置
-		startIndex := int(receiver.offset) + 1
+		startIndex := receiver.offset + 1
 		endIndex := startIndex + pullCount
 
 		// 得到本次消费的队列切片
@@ -109,7 +108,8 @@ func (receiver *subscriber) pullMessage() {
 		exception.Try(func() {
 			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
 			// 保存本次消费的位置
-			atomic.StoreInt64(&receiver.offset, int64(endIndex-1))
+			//atomic.StoreInt64(&receiver.offset, int64(endIndex-1))
+			receiver.offset = endIndex - 1
 		}).CatchException(func(exp any) {
 			<-time.After(time.Second)
 		})
