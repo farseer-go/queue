@@ -41,6 +41,7 @@ func newQueueManager(queueName string) *queueManager {
 func (receiver *queueManager) stat() {
 	for {
 		time.Sleep(MoveQueueInterval)
+		receiver.queueLock.Lock()
 		// 计算当前所有订阅者的最后消费的位置的最小值
 		receiver.minOffset = receiver.subscribers.Min(func(item *subscriber) any {
 			return item.offset //return atomic.LoadInt64(&item.offset)
@@ -48,10 +49,9 @@ func (receiver *queueManager) stat() {
 
 		// 所有订阅者没有在执行的时候，做一次队列合并
 		if receiver.minOffset > -1 {
-			receiver.queueLock.Lock()
 			receiver.moveQueue()
-			receiver.queueLock.Unlock()
 		}
+		receiver.queueLock.Unlock()
 	}
 }
 

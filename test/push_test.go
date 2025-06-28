@@ -1,7 +1,6 @@
 package test
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -19,7 +18,7 @@ func TestPush(t *testing.T) {
 		queue.Push("test", 0)
 	})
 	var aSum int
-	var lockA sync.Mutex
+	//var lockA sync.Mutex
 	queue.Subscribe("test", "A", 2, 0, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "A", subscribeName)
 		lst := collections.NewList[int]()
@@ -27,13 +26,13 @@ func TestPush(t *testing.T) {
 			lst.Add((*item).(int))
 		})
 
-		lockA.Lock()
-		defer lockA.Unlock()
+		//lockA.Lock()
+		//defer lockA.Unlock()
 		aSum += lst.SumItem()
 	})
 
 	var bSum int
-	var lockB sync.Mutex
+	//var lockB sync.Mutex
 	queue.Subscribe("test", "B", 4, 0, func(subscribeName string, lstMessage collections.ListAny, remainingCount int) {
 		assert.Equal(t, "B", subscribeName)
 		lst := collections.NewList[int]()
@@ -41,8 +40,8 @@ func TestPush(t *testing.T) {
 			lst.Add((*item).(int))
 		})
 
-		lockB.Lock()
-		defer lockB.Unlock()
+		//lockB.Lock()
+		//defer lockB.Unlock()
 		bSum += lst.SumItem()
 	})
 
@@ -58,10 +57,10 @@ func TestPush(t *testing.T) {
 
 	time.Sleep(200 * time.Millisecond)
 
-	lockA.Lock()
-	lockB.Lock()
-	defer lockA.Unlock()
-	defer lockB.Unlock()
+	//lockA.Lock()
+	//lockB.Lock()
+	//defer lockA.Unlock()
+	//defer lockB.Unlock()
 	assert.Equal(t, 4950, aSum)
 	assert.Equal(t, 4950, bSum)
 }

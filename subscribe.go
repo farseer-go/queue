@@ -87,7 +87,7 @@ func (receiver *subscriber) pullMessage() {
 		}
 
 		// 设置为消费中
-		receiver.queueManager.queueLock.RLock()
+		receiver.queueManager.queueLock.Lock()
 
 		//receiver.notify = make(chan bool, 100000)
 		for len(receiver.notify) > 0 {
@@ -101,7 +101,6 @@ func (receiver *subscriber) pullMessage() {
 		// 得到本次消费的队列切片
 		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
-		receiver.queueManager.queueLock.RUnlock()
 
 		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
 		// 执行客户端的消费
@@ -109,8 +108,10 @@ func (receiver *subscriber) pullMessage() {
 			receiver.subscribeFunc(receiver.subscribeName, curQueue, remainingCount)
 			// 保存本次消费的位置
 			//atomic.StoreInt64(&receiver.offset, int64(endIndex-1))
-			receiver.offset = endIndex - 1
+			receiver.offset += pullCount
+			receiver.queueManager.queueLock.Unlock()
 		}).CatchException(func(exp any) {
+			receiver.queueManager.queueLock.Unlock()
 			<-time.After(time.Second)
 		})
 
