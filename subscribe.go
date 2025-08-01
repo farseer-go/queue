@@ -102,6 +102,8 @@ func (receiver *subscriber) pullMessage() {
 		curQueue := receiver.queueManager.queue.Range(startIndex, pullCount).ToListAny()
 		remainingCount := receiver.queueManager.queue.Count() - endIndex
 
+		// InitContext 初始化同一协程上下文，避免在同一协程中多次初始化
+		asyncLocal.InitContext()
 		traceContext := receiver.traceManager.EntryQueueConsumer(receiver.queueManager.name, receiver.subscribeName)
 		// 执行客户端的消费
 		exception.Try(func() {
