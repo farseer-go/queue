@@ -25,7 +25,7 @@ type queueManager struct {
 	// 订阅者
 	subscribers collections.List[*subscriber]
 	// 读写锁
-	queueLock sync.RWMutex
+	queueLock *sync.RWMutex
 }
 
 func newQueueManager(queueName string) *queueManager {
@@ -34,6 +34,7 @@ func newQueueManager(queueName string) *queueManager {
 		minOffset:   -1,
 		queue:       collections.NewListAny(),
 		subscribers: collections.NewList[*subscriber](),
+		queueLock:   &sync.RWMutex{},
 	}
 }
 
@@ -41,17 +42,30 @@ func newQueueManager(queueName string) *queueManager {
 func (receiver *queueManager) stat() {
 	for {
 		time.Sleep(MoveQueueInterval)
-		receiver.queueLock.Lock()
 		// 计算当前所有订阅者的最后消费的位置的最小值
-		receiver.minOffset = receiver.subscribers.Min(func(item *subscriber) any {
-			return item.offset //return atomic.LoadInt64(&item.offset)
-		}).(int)
+		if receiver.subscribers.Count() > 0 {
+			receiver.queueLock.Lock()
 
-		// 所有订阅者没有在执行的时候，做一次队列合并
-		if receiver.minOffset > -1 {
-			receiver.moveQueue()
+			// 先校验所有订阅者的 offset 是否合法
+			// queueCount := receiver.queue.Count()
+			// for i := 0; i < receiver.subscribers.Count(); i++ {
+			// 	subscriber := receiver.subscribers.Index(i)
+			// 	if subscriber.offset >= queueCount {
+			// 		subscriber.offset = queueCount - 1
+			// 	}
+			// }
+
+			// 计算最小 offset
+			receiver.minOffset = receiver.subscribers.Min(func(item *subscriber) any {
+				return item.offset //return atomic.LoadInt64(&item.offset)
+			}).(int)
+
+			// 所有订阅者没有在执行的时候，做一次队列合并
+			if receiver.minOffset > -1 {
+				receiver.moveQueue()
+			}
+			receiver.queueLock.Unlock()
 		}
-		receiver.queueLock.Unlock()
 	}
 }
 
