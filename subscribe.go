@@ -1,11 +1,14 @@
 package queue
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/asyncLocal"
+	"github.com/farseer-go/fs/color"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
@@ -133,9 +136,12 @@ func (receiver *subscriber) pullMessage() {
 			receiver.offset += pullCount
 			receiver.queueManager.queueLock.Unlock()
 		}).CatchException(func(exp any) {
-			// 如果忽略了链路,则要在这里打印错误日志
-			if traceContext.IsIgnore() {
-				flog.Errorf("%s,%s 异常: %v", receiver.queueManager.name, receiver.subscribeName, exp)
+			if traceContext.IsIgnore() { // 如果忽略了链路,则要在这里打印错误日志
+				lstLogs := []string{fmt.Sprintf("%s,%s 异常: %v", receiver.queueManager.name, receiver.subscribeName, exp)}
+				for index, exceptionStackDetail := range trace.GetCallerInfo() {
+					lstLogs = append(lstLogs, fmt.Sprintf("\t%d、%s:%s %s", index+1, exceptionStackDetail.ExceptionCallFile, color.Yellow(exceptionStackDetail.ExceptionCallLine), color.Red(exceptionStackDetail.ExceptionCallFuncName)))
+				}
+				flog.Error(strings.Join(lstLogs, "\n") + "\n")
 			}
 			<-time.After(time.Second)
 		})
