@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/trace"
 )
 
@@ -132,6 +133,10 @@ func (receiver *subscriber) pullMessage() {
 			receiver.offset += pullCount
 			receiver.queueManager.queueLock.Unlock()
 		}).CatchException(func(exp any) {
+			// 如果忽略了链路,则要在这里打印错误日志
+			if traceContext.IsIgnore() {
+				flog.Errorf("%s,%s 异常: %v", receiver.queueManager.name, receiver.subscribeName, exp)
+			}
 			<-time.After(time.Second)
 		})
 
