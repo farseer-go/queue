@@ -9,7 +9,6 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/asyncLocal"
 	"github.com/farseer-go/fs/color"
-	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/trace"
@@ -68,7 +67,7 @@ func Subscribe(queueName string, subscribeName string, pullCount int, sleepTime 
 		sleepTime:     sleepTime,
 		queueManager:  queue,
 		notify:        make(chan bool, 1),
-		traceManager:  container.Resolve[trace.IManager](),
+		traceManager:  trace.Manager(),
 	}
 
 	// Bug Fix: subscribers.Add 必须在 queueLock 保护下执行
